@@ -6,109 +6,31 @@ local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceDBOptions = LibStub("AceDBOptions-3.0")
 
---- Renders a blockedNPCs/blockedLines value (a display name, or `true` if none was known yet
---- when it was silenced) as a display string.
-local function DisplayName(name)
-    if type(name) == "string" then
-        return name
-    end
-    return L.UNKNOWN_NAME
+--- A blank full-width line, used to put a bit of breathing room between unrelated widgets
+--- (AceConfig otherwise packs controls tightly with no vertical margin of their own).
+---@param order number
+local function Spacer(order)
+    return { type = "description", order = order, name = " ", width = "full" }
 end
 
---- A blockedLines key looks like "<npcID>|q<questID>" or "<npcID>|t<textHash>". Split it back
---- into the NPC ID and a human-readable description of which line it is, for the options list.
----@param lineKey string
----@return number|nil npcID
----@return string detail
-local function ParseLineKey(lineKey)
-    local npcIDStr, kind, num = lineKey:match("^(%d+)|([qt])(%d+)$")
-    if kind == "q" then
-        return tonumber(npcIDStr), format(L.LINE_QUEST, num)
-    elseif kind == "t" then
-        return tonumber(npcIDStr), format(L.LINE_TEXT, num)
+---@param t table
+---@return number count of entries in a hash table (e.g. keyed by npcID), which has no #t
+local function CountEntries(t)
+    local count = 0
+    for _ in pairs(t) do
+        count = count + 1
     end
-    return nil, lineKey
+    return count
 end
 
---- Builds a list of clickable plain-text entries, one per row, each removed by clicking it.
---- Each entry's whole line is the button (an AceGUI "execute" widget renders as plain text
---- with a button's click behavior, not an editable field).
----@param rows table[] array of `{ remove = fun(), label = string }`
----@param removeDesc string tooltip for each entry
----@param emptyText string shown when there are no rows
-local function BuildEntryArgs(rows, removeDesc, emptyText)
-    local args = {}
-    for order, row in ipairs(rows) do
-        args["entry" .. order] = {
-            type = "execute",
-            order = order,
-            name = row.label,
-            desc = removeDesc,
-            width = "full",
-            func = row.remove,
-        }
+--- A button label with the live entry count appended, e.g. "Manage Overrides... (3)", so it's
+--- obvious there's nothing to manage without having to open the dialog first.
+---@param label string
+---@param countFn fun(): number
+local function ManageButtonLabel(label, countFn)
+    return function()
+        return format("%s (%d)", label, countFn())
     end
-    if #rows == 0 then
-        args.none = { type = "description", order = 1, name = emptyText }
-    end
-    return args
-end
-
---- Builds the "<id> - <name> (<seconds>s)" rows for the delay-overrides list, sorted by NPC ID.
-local function BuildDelayOverrideRows()
-    local npcIDs = {}
-    for npcID in pairs(VoiceOverTweaks.db.profile.delays) do
-        table.insert(npcIDs, npcID)
-    end
-    table.sort(npcIDs)
-
-    local rows = {}
-    for _, npcID in ipairs(npcIDs) do
-        local override = VoiceOverTweaks.db.profile.delays[npcID]
-        table.insert(rows, {
-            remove = function() VoiceOverTweaks:RemoveDelayOverride(npcID) end,
-            label = format(L.ROW_DELAY_OVERRIDE, npcID, DisplayName(override.name), override.seconds),
-        })
-    end
-    return rows
-end
-
---- Builds the "<id> - <name>" rows for the silenced-NPCs list, sorted by NPC ID.
-local function BuildBlockedNPCRows()
-    local npcIDs = {}
-    for npcID in pairs(VoiceOverTweaks.db.profile.blockedNPCs) do
-        table.insert(npcIDs, npcID)
-    end
-    table.sort(npcIDs)
-
-    local rows = {}
-    for _, npcID in ipairs(npcIDs) do
-        table.insert(rows, {
-            remove = function() VoiceOverTweaks:UnblockNPC(npcID) end,
-            label = format(L.ROW_BLOCKED_NPC, npcID, DisplayName(VoiceOverTweaks.db.profile.blockedNPCs[npcID])),
-        })
-    end
-    return rows
-end
-
---- Builds the "<npc id> - <name> (<line>)" rows for the silenced-lines list, sorted by line key.
-local function BuildBlockedLineRows()
-    local lineKeys = {}
-    for lineKey in pairs(VoiceOverTweaks.db.profile.blockedLines) do
-        table.insert(lineKeys, lineKey)
-    end
-    table.sort(lineKeys)
-
-    local rows = {}
-    for _, lineKey in ipairs(lineKeys) do
-        local npcID, detail = ParseLineKey(lineKey)
-        table.insert(rows, {
-            remove = function() VoiceOverTweaks:UnblockLine(lineKey) end,
-            label = format(L.ROW_BLOCKED_LINE, npcID and tostring(npcID) or "?",
-                DisplayName(VoiceOverTweaks.db.profile.blockedLines[lineKey]), detail),
-        })
-    end
-    return rows
 end
 
 local options = {
@@ -137,18 +59,19 @@ local options = {
                     get = function() return VoiceOverTweaks.db.profile.defaultDelay end,
                     set = function(_, value) VoiceOverTweaks.db.profile.defaultDelay = value end,
                 },
+                spacer1 = Spacer(3),
                 targetHelp = {
                     type = "description",
-                    order = 3,
+                    order = 4,
                     name = L.DELAY_TARGET_HELP,
                 },
-                overrides = {
-                    type = "group",
-                    order = 4,
-                    name = L.DELAY_OVERRIDES_GROUP,
-                    inline = true,
-                    args = {},
-                    get = false,
+                manageOverrides = {
+                    type = "execute",
+                    order = 5,
+                    name = ManageButtonLabel(L.DELAY_OVERRIDES_MANAGE_BUTTON,
+                        function() return CountEntries(VoiceOverTweaks.db.profile.delays) end),
+                    width = "full",
+                    func = function() VoiceOverTweaks:ShowDelayOverridesDialog() end,
                 },
             },
         },
@@ -162,26 +85,27 @@ local options = {
                     order = 1,
                     name = L.SILENCE_DESCRIPTION,
                 },
+                spacer1 = Spacer(2),
                 targetHelp = {
                     type = "description",
-                    order = 2,
+                    order = 3,
                     name = L.SILENCE_TARGET_HELP,
                 },
-                blockedNPCs = {
-                    type = "group",
-                    order = 3,
-                    name = L.SILENCE_NPCS_GROUP,
-                    inline = true,
-                    args = {},
-                    get = false,
-                },
-                blockedLines = {
-                    type = "group",
+                manageBlockedNPCs = {
+                    type = "execute",
                     order = 4,
-                    name = L.SILENCE_LINES_GROUP,
-                    inline = true,
-                    args = {},
-                    get = false,
+                    name = ManageButtonLabel(L.SILENCE_NPCS_MANAGE_BUTTON,
+                        function() return CountEntries(VoiceOverTweaks.db.profile.blockedNPCs) end),
+                    width = 1.8,
+                    func = function() VoiceOverTweaks:ShowSilencedNPCsDialog() end,
+                },
+                manageBlockedLines = {
+                    type = "execute",
+                    order = 5,
+                    name = ManageButtonLabel(L.SILENCE_LINES_MANAGE_BUTTON,
+                        function() return CountEntries(VoiceOverTweaks.db.profile.blockedLines) end),
+                    width = 1.8,
+                    func = function() VoiceOverTweaks:ShowSilencedLinesDialog() end,
                 },
             },
         },
@@ -196,14 +120,6 @@ local function RefreshOptionsTable()
         options.args.profiles = AceDBOptions:GetOptionsTable(VoiceOverTweaks.db)
         options.args.profiles.order = 3
     end
-
-    options.args.delay.args.overrides.args = BuildEntryArgs(
-        BuildDelayOverrideRows(), L.DELAY_OVERRIDE_REMOVE_DESC, L.DELAY_OVERRIDES_EMPTY)
-
-    options.args.silence.args.blockedNPCs.args = BuildEntryArgs(
-        BuildBlockedNPCRows(), L.SILENCE_NPC_REMOVE_DESC, L.SILENCE_NPCS_EMPTY)
-    options.args.silence.args.blockedLines.args = BuildEntryArgs(
-        BuildBlockedLineRows(), L.SILENCE_LINE_REMOVE_DESC, L.SILENCE_LINES_EMPTY)
 
     AceConfigDialog:ConfigTableChanged(nil, "VoiceOverTweaks")
 end
