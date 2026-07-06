@@ -1,0 +1,7 @@
+{
+  "workspace.library": ["${workspaceFolder}/Libs"],
+    "diagnostics.globals": [
+        "LibStub",
+        "VoiceOver"
+    ]
+}

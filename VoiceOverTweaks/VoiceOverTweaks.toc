@@ -1,0 +1,22 @@
+## Interface: 11508
+## Title: VoiceOverTweaks
+## Notes: Delays and/or silences specific VoiceOver TTS lines.
+## Version: 1.0.0
+## Author: Scyfar
+## SavedVariables: VoiceOverTweaksDB
+## OptionalDeps: AI_VoiceOver
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\AceAddon-3.0\AceAddon-3.0.lua
+Libs\AceDB-3.0\AceDB-3.0.lua
+Libs\AceConsole-3.0\AceConsole-3.0.lua
+Libs\AceGUI-3.0\AceGUI-3.0.xml
+Libs\AceConfig-3.0\AceConfig-3.0.xml
+Libs\AceDBOptions-3.0\AceDBOptions-3.0.xml
+
+Core.lua
+Delay.lua
+Silencer.lua
+MuteButton.lua
+Options.lua
