@@ -1,5 +1,6 @@
 local ADDON_NAME = ...
 local VoiceOverTweaks = _G[ADDON_NAME]
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -11,7 +12,7 @@ local function DisplayName(name)
     if type(name) == "string" then
         return name
     end
-    return "Unknown"
+    return L.UNKNOWN_NAME
 end
 
 --- A blockedLines key looks like "<npcID>|q<questID>" or "<npcID>|t<textHash>". Split it back
@@ -22,9 +23,9 @@ end
 local function ParseLineKey(lineKey)
     local npcIDStr, kind, num = lineKey:match("^(%d+)|([qt])(%d+)$")
     if kind == "q" then
-        return tonumber(npcIDStr), format("Quest %s", num)
+        return tonumber(npcIDStr), format(L.LINE_QUEST, num)
     elseif kind == "t" then
-        return tonumber(npcIDStr), format("Text #%s", num)
+        return tonumber(npcIDStr), format(L.LINE_TEXT, num)
     end
     return nil, lineKey
 end
@@ -66,7 +67,7 @@ local function BuildDelayOverrideRows()
         local override = VoiceOverTweaks.db.profile.delays[npcID]
         table.insert(rows, {
             remove = function() VoiceOverTweaks:RemoveDelayOverride(npcID) end,
-            label = format("%d - %s (%.1fs)", npcID, DisplayName(override.name), override.seconds),
+            label = format(L.ROW_DELAY_OVERRIDE, npcID, DisplayName(override.name), override.seconds),
         })
     end
     return rows
@@ -84,7 +85,7 @@ local function BuildBlockedNPCRows()
     for _, npcID in ipairs(npcIDs) do
         table.insert(rows, {
             remove = function() VoiceOverTweaks:UnblockNPC(npcID) end,
-            label = format("%d - %s", npcID, DisplayName(VoiceOverTweaks.db.profile.blockedNPCs[npcID])),
+            label = format(L.ROW_BLOCKED_NPC, npcID, DisplayName(VoiceOverTweaks.db.profile.blockedNPCs[npcID])),
         })
     end
     return rows
@@ -103,7 +104,7 @@ local function BuildBlockedLineRows()
         local npcID, detail = ParseLineKey(lineKey)
         table.insert(rows, {
             remove = function() VoiceOverTweaks:UnblockLine(lineKey) end,
-            label = format("%s - %s (%s)", npcID and tostring(npcID) or "?",
+            label = format(L.ROW_BLOCKED_LINE, npcID and tostring(npcID) or "?",
                 DisplayName(VoiceOverTweaks.db.profile.blockedLines[lineKey]), detail),
         })
     end
@@ -118,18 +119,18 @@ local options = {
         delay = {
             type = "group",
             order = 1,
-            name = "Delay",
+            name = L.TAB_DELAY,
             args = {
                 description = {
                     type = "description",
                     order = 1,
-                    name = "Delays an NPC's first VoiceOver line so it doesn't talk over their native Blizzard greeting.\n",
+                    name = L.DELAY_DESCRIPTION,
                 },
                 defaultDelay = {
                     type = "range",
                     order = 2,
-                    name = "Default delay (seconds)",
-                    desc = "Applied to any NPC without its own override below.",
+                    name = L.DELAY_DEFAULT_LABEL,
+                    desc = L.DELAY_DEFAULT_DESC,
                     min = 0,
                     max = 10,
                     step = 0.1,
@@ -139,12 +140,12 @@ local options = {
                 targetHelp = {
                     type = "description",
                     order = 3,
-                    name = "Use |cffffd200/vot delay <seconds>|r to set an override for your current target, or |cffffd200/vot delay reset|r to remove it.\n",
+                    name = L.DELAY_TARGET_HELP,
                 },
                 overrides = {
                     type = "group",
                     order = 4,
-                    name = "Per-NPC Overrides",
+                    name = L.DELAY_OVERRIDES_GROUP,
                     inline = true,
                     args = {},
                     get = false,
@@ -154,22 +155,22 @@ local options = {
         silence = {
             type = "group",
             order = 2,
-            name = "Silence",
+            name = L.TAB_SILENCE,
             args = {
                 description = {
                     type = "description",
                     order = 1,
-                    name = "Silence specific NPCs or lines spoken by the VoiceOver addon. Click an entry below to unsilence it.\n",
+                    name = L.SILENCE_DESCRIPTION,
                 },
                 targetHelp = {
                     type = "description",
                     order = 2,
-                    name = "Use |cffffd200/vot silence|r to silence your current target's NPC entirely, or |cffffd200/vot silence reset|r to unsilence it.\n",
+                    name = L.SILENCE_TARGET_HELP,
                 },
                 blockedNPCs = {
                     type = "group",
                     order = 3,
-                    name = "Silenced NPCs",
+                    name = L.SILENCE_NPCS_GROUP,
                     inline = true,
                     args = {},
                     get = false,
@@ -177,7 +178,7 @@ local options = {
                 blockedLines = {
                     type = "group",
                     order = 4,
-                    name = "Silenced Lines",
+                    name = L.SILENCE_LINES_GROUP,
                     inline = true,
                     args = {},
                     get = false,
@@ -197,12 +198,12 @@ local function RefreshOptionsTable()
     end
 
     options.args.delay.args.overrides.args = BuildEntryArgs(
-        BuildDelayOverrideRows(), "Click to remove this NPC's delay override.", "No per-NPC delay overrides set.")
+        BuildDelayOverrideRows(), L.DELAY_OVERRIDE_REMOVE_DESC, L.DELAY_OVERRIDES_EMPTY)
 
     options.args.silence.args.blockedNPCs.args = BuildEntryArgs(
-        BuildBlockedNPCRows(), "Click to unsilence this NPC.", "No NPCs are fully silenced.")
+        BuildBlockedNPCRows(), L.SILENCE_NPC_REMOVE_DESC, L.SILENCE_NPCS_EMPTY)
     options.args.silence.args.blockedLines.args = BuildEntryArgs(
-        BuildBlockedLineRows(), "Click to unsilence this line.", "No individual lines are silenced.")
+        BuildBlockedLineRows(), L.SILENCE_LINE_REMOVE_DESC, L.SILENCE_LINES_EMPTY)
 
     AceConfigDialog:ConfigTableChanged(nil, "VoiceOverTweaks")
 end

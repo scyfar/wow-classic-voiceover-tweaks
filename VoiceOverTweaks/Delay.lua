@@ -1,5 +1,6 @@
 local ADDON_NAME = ...
 local VoiceOverTweaks = _G[ADDON_NAME]
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 ---@param soundData SoundData
 ---@return number delaySeconds
@@ -31,7 +32,7 @@ function VoiceOverTweaks:SetTargetDelayOverride(seconds)
     end
 
     self.db.profile.delays[npcID] = { seconds = seconds, name = name }
-    self:Print(format("Set delay override for NPC %d to %.1fs.", npcID, seconds))
+    self:Print(format(L.MSG_DELAY_SET, npcID, seconds))
 end
 
 function VoiceOverTweaks:ResetTargetDelayOverride()
@@ -41,13 +42,12 @@ function VoiceOverTweaks:ResetTargetDelayOverride()
     end
 
     if self.db.profile.delays[npcID] == nil then
-        self:Print(format("NPC %d has no delay override.", npcID))
+        self:Print(format(L.MSG_DELAY_NONE, npcID))
         return
     end
 
     self:RemoveDelayOverride(npcID)
-    self:Print(format("Removed delay override for NPC %d. Falling back to default (%.1fs).", npcID,
-        self.db.profile.defaultDelay))
+    self:Print(format(L.MSG_DELAY_REMOVED, npcID, self.db.profile.defaultDelay))
 end
 
 --- Handles `/vot delay ...`. `args` is the full slash command args table, with args[1] == "delay".

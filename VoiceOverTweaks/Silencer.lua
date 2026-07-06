@@ -1,5 +1,6 @@
 local ADDON_NAME = ...
 local VoiceOverTweaks = _G[ADDON_NAME]
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Simple string hash (djb2), just needs to be stable/collision-resistant enough for our own key space.
 local function HashText(text)
@@ -81,13 +82,13 @@ function VoiceOverTweaks:HandleSilenceCommand(args)
         local npcID, name = self:GetTargetNPCID()
         if npcID then
             self:UnblockNPC(npcID)
-            self:Print(format("Unsilenced %s (NPC ID %d).", name or "target", npcID))
+            self:Print(format(L.MSG_UNSILENCED_TARGET, name or L.FALLBACK_TARGET_NAME, npcID))
         end
     elseif not sub then
         local npcID, name = self:GetTargetNPCID()
         if npcID then
             self:BlockNPC(npcID, name)
-            self:Print(format("Silenced all VoiceOver lines from %s (NPC ID %d).", name or "target", npcID))
+            self:Print(format(L.MSG_SILENCED_TARGET, name or L.FALLBACK_TARGET_NAME, npcID))
         end
     else
         self:PrintHelp()

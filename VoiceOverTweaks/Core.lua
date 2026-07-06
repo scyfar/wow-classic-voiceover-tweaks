@@ -4,6 +4,8 @@ local ADDON_NAME = ...
 local VoiceOverTweaks = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceConsole-3.0")
 _G[ADDON_NAME] = VoiceOverTweaks
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 local defaults = {
     profile = {
         defaultDelay = 1,
@@ -65,13 +67,13 @@ end
 ---@return string|nil name
 function VoiceOverTweaks:GetTargetNPCID()
     if not UnitExists("target") then
-        self:Print("You have no target.")
+        self:Print(L.MSG_NO_TARGET)
         return nil
     end
 
     local npcID = self:GetNPCIDFromGUID(UnitGUID("target"))
     if not npcID then
-        self:Print("Your target isn't a valid NPC (must be a creature, vehicle, or game object).")
+        self:Print(L.MSG_INVALID_TARGET)
         return nil
     end
 
@@ -133,12 +135,12 @@ end
 --- profile management) lives in the options panel; the slash command only covers actions
 --- tied to your current target, plus opening that panel.
 function VoiceOverTweaks:PrintHelp()
-    self:Print("Usage:")
-    print("  /vot delay <seconds> - Set a delay override for your current target")
-    print("  /vot delay reset - Remove your current target's delay override")
-    print("  /vot silence - Silence your current target")
-    print("  /vot silence reset - Unsilence your current target")
-    print("  /vot options")
+    self:Print(L.MSG_USAGE_HEADER)
+    print(L.MSG_USAGE_DELAY_SET)
+    print(L.MSG_USAGE_DELAY_RESET)
+    print(L.MSG_USAGE_SILENCE_SET)
+    print(L.MSG_USAGE_SILENCE_RESET)
+    print(L.MSG_USAGE_OPTIONS)
 end
 
 function VoiceOverTweaks:HandleSlashCommand(input)
