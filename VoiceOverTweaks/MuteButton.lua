@@ -63,13 +63,15 @@ local function OnClick(self, mouseButton)
 end
 
 local function CreateButton()
-    -- Anchor next to VoiceOver's own "stop gossip" speech-bubble button.
-    local stopGossip = VoiceOver.SoundQueueUI.frame.container.stopGossip
+    -- Anchor to the dialog frame itself rather than any of its content (portrait, gossip
+    -- button, queued-entry list, ...), since which of those are shown/where they sit varies
+    -- with the queue content and even differs between game versions.
+    local frame = VoiceOver.SoundQueueUI.frame
 
-    button = CreateFrame("Button", "VoiceOverTweaksMuteButton", stopGossip)
+    button = CreateFrame("Button", "VoiceOverTweaksMuteButton", frame)
     button:SetSize(20, 20)
-    button:SetPoint("LEFT", stopGossip, "RIGHT", 4, 0)
-    button:SetFrameLevel(stopGossip:GetFrameLevel() + 1)
+    button:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -2)
+    button:SetFrameLevel(frame:GetFrameLevel() + 10)
 
     button:SetNormalTexture([[Interface\Common\VoiceChat-Muted]])
     button:SetHighlightTexture([[Interface\Common\VoiceChat-Muted]], "ADD")
@@ -97,8 +99,7 @@ function VoiceOverTweaks:InstallMuteButton()
         return true
     end
 
-    if not VoiceOver or not VoiceOver.SoundQueueUI or not VoiceOver.SoundQueueUI.frame
-        or not VoiceOver.SoundQueueUI.frame.container or not VoiceOver.SoundQueueUI.frame.container.stopGossip then
+    if not VoiceOver or not VoiceOver.SoundQueueUI or not VoiceOver.SoundQueueUI.frame then
         return false
     end
 
