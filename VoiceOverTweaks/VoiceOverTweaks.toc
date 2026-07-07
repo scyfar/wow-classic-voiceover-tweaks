@@ -1,4 +1,4 @@
-## Interface: 11508
+## Interface: 11508, 20505
 ## Title: VoiceOverTweaks
 ## Notes: Delays and/or silences specific VoiceOver TTS lines.
 ## Version: 1.0.0
